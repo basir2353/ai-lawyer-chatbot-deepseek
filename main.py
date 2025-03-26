@@ -34,6 +34,8 @@ Answer:
 """
 
 def extract_think_section(response_text):
+    if not isinstance(response_text, str):
+        return "Invalid response format. Could not extract relevant information."
     match = re.search(r"<think>(.*?)</think>", response_text, re.DOTALL)
     return match.group(1).strip() if match else "No relevant information found."
 
@@ -77,8 +79,15 @@ def answer_query(documents, model, query):
     context = get_context(documents)
     prompt = ChatPromptTemplate.from_template(custom_prompt_template)
     chain = prompt | model
-    full_response = chain.invoke({"question": query, "context": context})
-    return extract_think_section(full_response)
+    try:
+        full_response = chain.invoke({"question": query, "context": context})
+        if isinstance(full_response, dict) and "text" in full_response:
+            full_response = full_response["text"]
+        elif not isinstance(full_response, str):
+            full_response = str(full_response)
+        return extract_think_section(full_response)
+    except Exception as e:
+        return f"Error generating response: {str(e)}"
 
 # Streamlit UI
 uploaded_file = st.file_uploader("Upload PDF", type="pdf")
