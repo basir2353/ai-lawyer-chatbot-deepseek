@@ -23,6 +23,19 @@ try:
 except Exception as e:
     st.error(f"Error initializing ChatGroq: {str(e)}")
 
+# Header with links
+st.markdown(
+    """
+    <h1 style='text-align: center;'>⚖️ Ask AI Lawyer</h1>
+    <p style='text-align: center;'>
+        <a href='https://www.linkedin.com/' target='_blank'>LinkedIn</a> |
+        <a href='https://github.com/' target='_blank'>GitHub</a> |
+        <a href='https://www.instagram.com/' target='_blank'>Instagram</a>
+    </p>
+    """,
+    unsafe_allow_html=True
+)
+
 # Prompt template
 custom_prompt_template = """
 Use the pieces of information provided in the context to answer user's question.
@@ -98,22 +111,8 @@ def answer_query(documents, model, query):
         return f"Error generating response: {str(e)}"
 
 # Streamlit UI
-st.set_page_config(page_title="Ask AI Lawyer", page_icon="🔖")
-
-st.title("⚖️ Ask AI Lawyer")
-st.markdown("### Upload your legal documents and get AI-powered insights!")
-
-# Social Media Links
-st.markdown("""
-**Follow us:**
-- [LinkedIn](https://www.linkedin.com)
-- [GitHub](https://github.com)
-- [Instagram](https://www.instagram.com)
-""")
-
 uploaded_file = st.file_uploader("Upload PDF", type="pdf")
 user_query = st.text_area("Enter your prompt:", height=150, placeholder="Ask Anything!")
-
 if st.button("Ask AI Lawyer"):
     if uploaded_file and user_query:
         upload_pdf(uploaded_file)
