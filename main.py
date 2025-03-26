@@ -23,10 +23,13 @@ try:
 except Exception as e:
     st.error(f"Error initializing ChatGroq: {str(e)}")
 
+# App Icon and Name
+st.set_page_config(page_title="AI Legal Assistant", page_icon="⚖️")
+
 # Header with links
 st.markdown(
     """
-    <h1 style='text-align: center;'>⚖️ Ask AI Lawyer</h1>
+    <h1 style='text-align: center;'>⚖️ AI Legal Assistant</h1>
     <p style='text-align: center;'>
         <a href='https://www.linkedin.com/' target='_blank'>LinkedIn</a> |
         <a href='https://github.com/' target='_blank'>GitHub</a> |
