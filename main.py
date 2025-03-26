@@ -29,11 +29,11 @@ st.set_page_config(page_title="AI Legal Assistant", page_icon="⚖️")
 # Header with links
 st.markdown(
     """
-    <h1 style='text-align: center;'>⚖️ AI Legal Assistant</h1>
+<h1 style='text-align: center;'>Upload Your File & Get Instant Legal Insights ⚖️</h1>
     <p style='text-align: center;'>
-        <a href='https://www.linkedin.com/' target='_blank'>LinkedIn</a> |
-        <a href='https://github.com/' target='_blank'>GitHub</a> |
-        <a href='https://www.instagram.com/' target='_blank'>Instagram</a>
+        <a href='https://www.linkedin.com/in/abdul-basit-1a56b3275/' target='_blank'>LinkedIn</a> |
+        <a href='https://github.com/basir2353' target='_blank'>GitHub</a> |
+        <a href='https://www.instagram.com/dogar_basit08/' target='_blank'>Instagram</a>
     </p>
     """,
     unsafe_allow_html=True
