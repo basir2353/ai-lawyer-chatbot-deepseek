@@ -6,6 +6,7 @@ from langchain_ollama import OllamaEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.vectorstores import FAISS
 from langchain_groq import ChatGroq
+import re
 
 # Set API Key securely
 os.environ["GROQ_API_KEY"] = "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"
@@ -31,6 +32,10 @@ Question: {question}
 Context: {context} 
 Answer:
 """
+
+def extract_think_section(response_text):
+    match = re.search(r"<think>(.*?)</think>", response_text, re.DOTALL)
+    return match.group(1).strip() if match else "No relevant information found."
 
 def upload_pdf(file):
     try:
@@ -72,7 +77,8 @@ def answer_query(documents, model, query):
     context = get_context(documents)
     prompt = ChatPromptTemplate.from_template(custom_prompt_template)
     chain = prompt | model
-    return chain.invoke({"question": query, "context": context})
+    full_response = chain.invoke({"question": query, "context": context})
+    return extract_think_section(full_response)
 
 # Streamlit UI
 uploaded_file = st.file_uploader("Upload PDF", type="pdf")
