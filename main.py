@@ -39,7 +39,12 @@ def extract_think_section(response_text):
     match = re.search(r"<think>(.*?)</think>", response_text, re.DOTALL)
     if match:
         extracted_text = match.group(1).strip()
-        return extracted_text.replace("\\n", " ")  # Remove newline characters
+        extracted_text = extracted_text.replace("\\n", " ")  # Remove newline characters
+        sections = extracted_text.split(". ")
+        formatted_response = f"### Answer\n\n{sections[0]}\n\n"  # Heading for answer
+        if len(sections) > 1:
+            formatted_response += "\n".join(sections[1:])  # Separate details into new lines
+        return formatted_response
     return "No relevant information found."
 
 def upload_pdf(file):
