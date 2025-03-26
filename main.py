@@ -9,7 +9,7 @@ from langchain_groq import ChatGroq
 import re
 
 # Set API Key securely
-os.environ["GROQ_API_KEY"] = "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"
+os.environ["GROQ_API_KEY"] = "your_api_key_here"
 
 # Define models
 ollama_model_name = "deepseek-r1:14b"
@@ -23,93 +23,71 @@ try:
 except Exception as e:
     st.error(f"Error initializing ChatGroq: {str(e)}")
 
-# Prompt template
-custom_prompt_template = """
-Use the pieces of information provided in the context to answer user's question.
-If you don't know the answer, just say that you don't know. Don't make up an answer.
-Don't provide anything out of the given context.
-Question: {question} 
-Context: {context} 
-Answer:
-"""
+# Streamlit UI Settings
+st.set_page_config(page_title="Ask AI Lawyer", page_icon="⚖️", layout="centered")
+st.markdown(
+    """
+    <style>
+    body { font-family: Arial, sans-serif; }
+    .stApp { background-color: #121212; color: white; }
+    .light-theme .stApp { background-color: #f5f5f5; color: black; }
+    .header { text-align: center; font-size: 36px; font-weight: bold; }
+    .social-icons { text-align: center; margin-top: 20px; }
+    .social-icons a { margin: 0 15px; text-decoration: none; font-size: 20px; color: #ffffff; }
+    .light-theme .social-icons a { color: #000000; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-def extract_think_section(response_text):
-    if not isinstance(response_text, str):
-        return "Invalid response format. Could not extract relevant information."
-    match = re.search(r"<think>(.*?)</think>", response_text, re.DOTALL)
-    if match:
-        extracted_text = match.group(1).strip()
-        extracted_text = extracted_text.replace("\\n", " ")  # Remove newline characters
-        sections = extracted_text.split(". ")
-        formatted_response = f"### Answer\n\n{sections[0]}\n\n"  # Heading for answer
-        if len(sections) > 1:
-            formatted_response += "\n".join(sections[1:])  # Separate details into new lines
-        return formatted_response
-    return "No relevant information found."
+# Header
+st.markdown('<div class="header">⚖️ Ask AI Lawyer ⚖️</div>', unsafe_allow_html=True)
 
-def upload_pdf(file):
-    try:
-        with open(os.path.join(pdfs_directory, file.name), "wb") as f:
-            f.write(file.getbuffer())
-    except Exception as e:
-        st.error(f"Error uploading PDF: {str(e)}")
+# Social Links
+st.markdown(
+    '<div class="social-icons">'
+    '<a href="https://www.linkedin.com/in/your-profile" target="_blank">LinkedIn</a>'
+    '<a href="https://github.com/your-profile" target="_blank">GitHub</a>'
+    '<a href="https://instagram.com/your-profile" target="_blank">Instagram</a>'
+    '</div>',
+    unsafe_allow_html=True,
+)
 
-def load_pdf(file_path):
-    try:
-        loader = PDFPlumberLoader(file_path)
-        return loader.load()
-    except Exception as e:
-        st.error(f"Error loading PDF: {str(e)}")
-        return []
-
-def create_chunks(documents): 
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000, chunk_overlap=200, add_start_index=True
-    )
-    return text_splitter.split_documents(documents)
-
-def create_vector_store(db_path, text_chunks, model_name):
-    try:
-        faiss_db = FAISS.from_documents(text_chunks, OllamaEmbeddings(model=model_name))
-        faiss_db.save_local(db_path)
-        return faiss_db
-    except Exception as e:
-        st.error(f"Error creating vector store: {str(e)}")
-        return None
-
-def retrieve_docs(faiss_db, query):
-    return faiss_db.similarity_search(query) if faiss_db else []
-
-def get_context(documents):
-    return "\n\n".join([doc.page_content for doc in documents])
-
-def answer_query(documents, model, query):
-    context = get_context(documents)
-    prompt = ChatPromptTemplate.from_template(custom_prompt_template)
-    chain = prompt | model
-    try:
-        full_response = chain.invoke({"question": query, "context": context})
-        if isinstance(full_response, dict) and "text" in full_response:
-            full_response = full_response["text"]
-        elif not isinstance(full_response, str):
-            full_response = str(full_response)
-        return extract_think_section(full_response)
-    except Exception as e:
-        return f"Error generating response: {str(e)}"
-
-# Streamlit UI
-uploaded_file = st.file_uploader("Upload PDF", type="pdf")
+# File Upload
+uploaded_file = st.file_uploader("Upload PDF", type=["pdf"], help="Upload legal documents for AI analysis")
 user_query = st.text_area("Enter your prompt:", height=150, placeholder="Ask Anything!")
+
 if st.button("Ask AI Lawyer"):
     if uploaded_file and user_query:
-        upload_pdf(uploaded_file)
-        documents = load_pdf(os.path.join(pdfs_directory, uploaded_file.name))
-        if documents:
-            text_chunks = create_chunks(documents)
-            faiss_db = create_vector_store(FAISS_DB_PATH, text_chunks, ollama_model_name)
-            retrieved_docs = retrieve_docs(faiss_db, user_query)
-            response = answer_query(retrieved_docs, llm_model, user_query)
+        try:
+            file_path = os.path.join(pdfs_directory, uploaded_file.name)
+            with open(file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            loader = PDFPlumberLoader(file_path)
+            documents = loader.load()
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+            text_chunks = text_splitter.split_documents(documents)
+            faiss_db = FAISS.from_documents(text_chunks, embeddings)
+            faiss_db.save_local(FAISS_DB_PATH)
+            retrieved_docs = faiss_db.similarity_search(user_query)
+            context = "\n\n".join([doc.page_content for doc in retrieved_docs])
+            prompt_template = ChatPromptTemplate.from_template("""
+                You are an AI Lawyer specializing in legal matters for Pakistan and the United States. 
+                Use the provided context to give an accurate, well-structured, and professional legal response. 
+                Ensure the answer is relevant to the legal systems of Pakistan and the US. 
+                If the context does not contain enough information, state that you cannot provide a definitive answer.
+                
+                Question: {question} 
+                Context: {context} 
+                
+                Answer:
+            """)
+            chain = prompt_template | llm_model
+            response = chain.invoke({"question": user_query, "context": context})
+            
             st.chat_message("user").write(user_query)
             st.chat_message("AI Lawyer").write(response)
+        except Exception as e:
+            st.error(f"Error processing request: {str(e)}")
     else:
         st.error("Please upload a valid PDF and enter a question!")
