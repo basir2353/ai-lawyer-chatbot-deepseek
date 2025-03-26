@@ -37,7 +37,10 @@ def extract_think_section(response_text):
     if not isinstance(response_text, str):
         return "Invalid response format. Could not extract relevant information."
     match = re.search(r"<think>(.*?)</think>", response_text, re.DOTALL)
-    return match.group(1).strip() if match else "No relevant information found."
+    if match:
+        extracted_text = match.group(1).strip()
+        return extracted_text.replace("\\n", " ")  # Remove newline characters
+    return "No relevant information found."
 
 def upload_pdf(file):
     try:
