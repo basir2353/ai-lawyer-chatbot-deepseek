@@ -26,10 +26,15 @@ except Exception as e:
 # Prompt template
 custom_prompt_template = """
 Use the pieces of information provided in the context to answer user's question.
+
 If you don't know the answer, just say that you don't know. Don't make up an answer.
+
 Don't provide anything out of the given context.
+
 Question: {question} 
+
 Context: {context} 
+
 Answer:
 """
 
@@ -43,7 +48,7 @@ def extract_think_section(response_text):
         sections = extracted_text.split(". ")
         formatted_response = f"### Answer\n\n{sections[0]}\n\n"  # Heading for answer
         if len(sections) > 1:
-            formatted_response += "\n".join(sections[1:])  # Separate details into new lines
+            formatted_response += "\n\n".join(sections[1:])  # Separate details into new lines
         return formatted_response
     return "No relevant information found."
 
@@ -106,8 +111,11 @@ st.markdown("### Upload your legal documents and get AI-powered insights!")
 # Social Media Links
 st.markdown("""
 **Follow us:**
+
 - [LinkedIn](https://www.linkedin.com)
+
 - [GitHub](https://github.com)
+
 - [Instagram](https://www.instagram.com)
 """)
 
