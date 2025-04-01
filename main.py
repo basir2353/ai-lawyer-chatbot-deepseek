@@ -7,6 +7,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.vectorstores import FAISS
 from langchain_groq import ChatGroq
 import re
+from web import search  # Importing web search
 
 # Set API Key securely
 os.environ["GROQ_API_KEY"] = "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"
@@ -23,10 +24,8 @@ try:
 except Exception as e:
     st.error(f"Error initializing ChatGroq: {str(e)}")
 
-# App Icon and Name
 st.set_page_config(page_title="AI Legal Assistant", page_icon="⚖️")
 
-# Header with links
 st.markdown(
     """
 <h1 style='text-align: center;'>Upload Your File & Get Instant Legal Insights ⚖️</h1>
@@ -39,7 +38,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Prompt template
 custom_prompt_template = """
 You are a highly experienced senior lawyer with deep expertise in legal analysis and advisory.  
 Use only the information provided in the context to deliver precise, well-reasoned legal insights.  
@@ -50,18 +48,17 @@ Context: {context}
 Legal Response:
 """
 
-
 def extract_think_section(response_text):
     if not isinstance(response_text, str):
         return "Invalid response format. Could not extract relevant information."
     match = re.search(r"<think>(.*?)</think>", response_text, re.DOTALL)
     if match:
         extracted_text = match.group(1).strip()
-        extracted_text = extracted_text.replace("\\n", " ")  # Remove newline characters
+        extracted_text = extracted_text.replace("\\n", " ")
         sections = extracted_text.split(". ")
-        formatted_response = f"### Answer\n\n{sections[0]}\n\n"  # Heading for answer
+        formatted_response = f"### Answer\n\n{sections[0]}\n\n"
         if len(sections) > 1:
-            formatted_response += "\n".join(sections[1:])  # Separate details into new lines
+            formatted_response += "\n".join(sections[1:])
         return formatted_response
     return "No relevant information found."
 
@@ -101,8 +98,7 @@ def retrieve_docs(faiss_db, query):
 def get_context(documents):
     return "\n\n".join([doc.page_content for doc in documents])
 
-def answer_query(documents, model, query):
-    context = get_context(documents)
+def answer_query(context, model, query):
     prompt = ChatPromptTemplate.from_template(custom_prompt_template)
     chain = prompt | model
     try:
@@ -115,19 +111,28 @@ def answer_query(documents, model, query):
     except Exception as e:
         return f"Error generating response: {str(e)}"
 
-# Streamlit UI
 uploaded_file = st.file_uploader("Upload PDF", type="pdf")
 user_query = st.text_area("Enter your prompt:", height=150, placeholder="Ask Anything!")
+
 if st.button("Ask AI Lawyer"):
-    if uploaded_file and user_query:
+    context = ""
+    if uploaded_file:
         upload_pdf(uploaded_file)
         documents = load_pdf(os.path.join(pdfs_directory, uploaded_file.name))
         if documents:
             text_chunks = create_chunks(documents)
             faiss_db = create_vector_store(FAISS_DB_PATH, text_chunks, ollama_model_name)
             retrieved_docs = retrieve_docs(faiss_db, user_query)
-            response = answer_query(retrieved_docs, llm_model, user_query)
-            st.chat_message("user").write(user_query)
-            st.chat_message("AI Lawyer").write(response)
+            context = get_context(retrieved_docs)
+    
+    if not context:
+        st.info("No PDF provided. Searching online for relevant legal information...")
+        web_results = search(user_query)
+        context = "\n\n".join([res["snippet"] for res in web_results if "snippet" in res])
+    
+    if context:
+        response = answer_query(context, llm_model, user_query)
+        st.chat_message("user").write(user_query)
+        st.chat_message("AI Lawyer").write(response)
     else:
-        st.error("Please upload a valid PDF and enter a question!")
+        st.error("No relevant legal information found!")
